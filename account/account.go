@@ -41,7 +41,7 @@ func Auth(username string, password string) (account_id int) {
 // This functions is generally used to authenticate a char-server or map-server
 func AuthServer(username string, password string) (account_id int) {
 	var query = "SELECT account_id FROM login WHERE sex = 'S' AND account_id < 2000000 AND userid = ? AND user_pass = ? LIMIT 1"
-	log.Println(username, password)
+
 	rows, err := db.Query(query, username, password)
 
 	if err != nil {
