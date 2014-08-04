@@ -77,12 +77,3 @@ func (p *PACKET_CHR_REQAUTHTOKEN) Read(buf []byte) {
     p.sex       = pkt.ReadUint8(14)
     p.request_id = pkt.ReadUint32(19)
 }
-
-// User count
-type PACKET_CHR_USERCOUNT struct {
-
-}
-
-func (p *PACKET_CHR_USERCOUNT) Read(buf []byte) {
-
-}

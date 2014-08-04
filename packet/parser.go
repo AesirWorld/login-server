@@ -19,12 +19,24 @@ func (p *Packet) ReadUint8(offset int16) uint8 {
 	return uint8(p.buffer[offset])
 }
 
+func (p *Packet) ReadInt8(offset int16) int8 {
+	return int8(p.buffer[offset])
+}
+
 func (p *Packet) ReadUint16(offset int16) uint16 {
 	return binary.LittleEndian.Uint16(p.buffer[offset:])
 }
 
+func (p *Packet) ReadInt16(offset int16) int16 {
+	return int16(binary.LittleEndian.Uint16(p.buffer[offset:]))
+}
+
 func (p *Packet) ReadUint32(offset int16) uint32 {
 	return binary.LittleEndian.Uint32(p.buffer[offset:])
+}
+
+func (p *Packet) ReadInt32(offset int16) int32 {
+	return int32(binary.LittleEndian.Uint32(p.buffer[offset:]))
 }
 
 func (p *Packet) ReadString(offset int16, length int16) string {
