@@ -38,14 +38,18 @@ const (
 
 // Client request for authentication with server
 type PACKET_ENTER struct {
-	username string
-	password string
+	version    uint32
+	username   string
+	password   string
+	clienttype uint8
 }
 
 func (p *PACKET_ENTER) Read(buf []byte) {
 	pkt := packet.Reader(buf)
+	p.version = pkt.ReadUint32(2)
 	p.username = pkt.ReadString(6, 24)
 	p.password = pkt.ReadString(30, 24)
+	p.clienttype = pkt.ReadUint8(54)
 }
 
 // Char-server connect request

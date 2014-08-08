@@ -3,21 +3,16 @@ package main
 import "log"
 import "net"
 import "os"
-import "github.com/AesirWorld/global-server/account"
+import "database/sql"
+import _ "github.com/ziutek/mymysql/godrv" // Go driver for database/sql package
 
 type Client struct {
 	conn       net.Conn
 	account_id int
-	login_id1  uint32
-	login_id2  uint32
 }
 
-type AuthDB struct {
-	login_id1 uint32
-	login_id2 uint32
-}
-
-var auth_db = make(map[int]*AuthDB)
+// Database connection to global scope
+var db *sql.DB
 
 func main() {
 	log.Println("Starting global-server...")
@@ -32,8 +27,17 @@ func main() {
 
 	log.Println("Global-server listening on port", 6900)
 
-	// Connect to account database
-	account.Connect()
+	// Connect to database
+	db, _ = sql.Open("mymysql", "tcp:127.0.0.1:3306*ragnarok/ragnarok/ragnarok")
+
+	defer db.Close()
+
+	// Test db connection
+	err = db.Ping()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Accept connections
 	for {
