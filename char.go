@@ -6,7 +6,72 @@ import "net"
 import "encoding/binary"
 import "database/sql"
 import "github.com/AesirWorld/global-server/auth_db"
+import "github.com/AesirWorld/global-server/char_db"
 import pkt "github.com/AesirWorld/global-server/packet"
+
+// Authenticate char-server connection request
+// After authenticating this char-server will have full access to all other routes!
+func charServerEnter(c net.Conn, packet []byte) {
+	data := &PACKET_CHR_ENTER{}
+	data.Read(packet)
+
+	log.Printf("Authenticating char-server (%s) with (%s/%s)\n", c.RemoteAddr(), data.username, data.password)
+
+	account_id := 0
+
+	err := db.QueryRow("SELECT account_id FROM login WHERE sex = 'S' AND account_id < 2000000 AND userid = ? AND user_pass = ? LIMIT 1",
+		data.username, data.password).Scan(&account_id)
+
+	switch {
+	case err == sql.ErrNoRows:
+		// User not found
+	case err != nil:
+		// Handler error
+	default:
+		// User found
+	}
+
+	if account_id == 0 {
+		log.Printf("Char-server connection request rejcted (%s)\n", c.RemoteAddr())
+
+		r := pkt.Writer(3)       // pkt length
+		r.WriteUint16(0, 0x2711) // Packet id
+		r.WriteUint8(2, 3)       // Type 3 = connection rejected.
+
+		c.Write(r.Buffer())
+	} else {
+		log.Printf("Char-server connection request accepted (%s) (%d)\n", c.RemoteAddr(), account_id)
+
+		// Convert from network byte order to BigEndian, wtf :( ?
+		// I dont even know whats happening anymore
+		// We should be receiving the IP:PORT in network byte order (Big Endian)
+		// And send it in LittleEndian, since our client uses it.
+		buf := make([]byte, 6)
+		binary.BigEndian.PutUint32(buf[0:], data.ip)
+		binary.BigEndian.PutUint16(buf[4:], data.port)
+		ip_htonl := binary.BigEndian.Uint32(buf[0:])
+		port_htons := binary.LittleEndian.Uint16(buf[4:])
+
+		// Add to char_db
+		char := &char_db.CharDB{
+			Name:  data.name,
+			Ip:    ip_htonl,
+			Port:  port_htons,
+			Users: 0,
+			Type:  data._type,
+			New:   data._new,
+		}
+
+		char.Register(1)
+
+		r := pkt.Writer(3)       // pkt length
+		r.WriteUint16(0, 0x2711) // Packet id
+		r.WriteUint8(2, 0)       // Type 0 = connection accepted.
+		c.Write(r.Buffer())
+
+		handlerCharServer(c, account_id)
+	}
+}
 
 // Char server handler
 // Packet router
@@ -42,49 +107,6 @@ func handlerCharServer(c net.Conn, id int) {
 		default:
 			log.Printf("Abnormal packet received from authenticated char-server (%s): %#04x\n", c.RemoteAddr(), packet_id)
 		}
-	}
-}
-
-// Authenticate char-server connection request
-// After authenticating this char-server will have full access to all other routes!
-func charServerEnter(c net.Conn, packet []byte) {
-	data := &PACKET_CHR_ENTER{}
-	data.Read(packet)
-
-	log.Printf("Authenticating char-server (%s) with (%s/%s)\n", c.RemoteAddr(), data.username, data.password)
-
-	account_id := 0
-
-	err := db.QueryRow("SELECT account_id FROM login WHERE sex = 'S' AND account_id < 2000000 AND userid = ? AND user_pass = ? LIMIT 1",
-		data.username, data.password).Scan(&account_id)
-
-	switch {
-	case err == sql.ErrNoRows:
-		// User not found
-	case err != nil:
-		// Handler error
-	default:
-		// User found
-	}
-
-	if account_id == 0 {
-		log.Printf("Char-server connection request rejcted (%s)\n", c.RemoteAddr())
-
-		r := pkt.Writer(3)       // pkt length
-		r.WriteUint16(0, 0x2711) // Packet id
-		r.WriteUint8(2, 3)       // Type 3 = connection rejected.
-
-		c.Write(r.Buffer())
-	} else {
-		log.Printf("Char-server connection request accepted (%s) (%d)\n", c.RemoteAddr(), account_id)
-
-		r := pkt.Writer(3)       // pkt length
-		r.WriteUint16(0, 0x2711) // Packet id
-		r.WriteUint8(2, 0)       // Type 0 = connection accepted.
-
-		c.Write(r.Buffer())
-
-		handlerCharServer(c, account_id)
 	}
 }
 
@@ -139,7 +161,7 @@ func charServerAccData(c net.Conn, packet []byte) {
 	var pincode_change uint32
 	var bank_vault uint32
 
-	qry := db.QueryRow("SELECT email, expiration_time, group_id, CAST(birthdate AS char), pincode, pincode_change, bank_vault	FROM login WHERE account_id = ?", data.aid)
+	qry := db.QueryRow("SELECT email, expiration_time, group_id, CAST(birthdate AS char), pincode, pincode_change, bank_vault FROM login WHERE account_id = ?", data.aid)
 	err := qry.Scan(&email, &expiration_time, &group_id, &birthdate, &pincode, &pincode_change, &bank_vault)
 
 	if err != nil {

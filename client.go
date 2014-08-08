@@ -6,8 +6,17 @@ import "net"
 import "math/rand"
 import "database/sql"
 import "github.com/AesirWorld/global-server/auth_db"
+import "github.com/AesirWorld/global-server/char_db"
 import pkt "github.com/AesirWorld/global-server/packet"
 
+// Client session
+type Client struct {
+	conn       net.Conn
+	account_id int
+}
+
+// Authenticate a client to this server
+// After authenticated, it will have access to other routes
 func clientEnter(c net.Conn, packet []byte) {
 	data := &PACKET_ENTER{}
 	data.Read(packet)
@@ -44,7 +53,10 @@ func clientEnter(c net.Conn, packet []byte) {
 		}
 
 		// Register client/player
-		//client := &Client{c, account_id}
+		client := Client{
+			conn:       c,
+			account_id: account_id,
+		}
 
 		// AuthCode
 		login_id1 := uint32(rand.Int31() + 1)
@@ -63,29 +75,64 @@ func clientEnter(c net.Conn, packet []byte) {
 		// Register to auth_db
 		auth.Register(account_id)
 
+		// Retrive server list
+		server1 := char_db.Get(1)
+
 		// Server num
 		server_num := 1
 
 		// Write response
 		packet_len := 47 + 32*server_num // Packet_size + Server_list_packet_size * servers_qunt
 		r := pkt.Writer(packet_len)
-		r.WriteUint16(0, uint16(0x69))       // Packet id
+		r.WriteUint16(0, 0x69)               // Packet id
 		r.WriteUint16(2, uint16(packet_len)) // Server list array length
 		r.WriteUint32(4, uint32(login_id1))  // Auth code part 1
 		r.WriteUint32(8, uint32(account_id)) // Account id
 		r.WriteUint32(12, uint32(login_id2)) // Auth code part 2
-		r.WriteUint32(16, uint32(0))         // I'm not sure what the hell this is
+		r.WriteUint32(16, 0)                 // I'm not sure what the hell this is
 		r.WriteString(20, "not sure", 26)    // This should be the last login date (length 26)
 		r.WriteUint8(46, uint8(sex_num))     // Account sex
 
 		if server_num > 0 {
-			r.WriteUint32(47, uint32(16777343)) // Char-server ip_addr
-			r.WriteUint16(51, uint16(6121))     // Char-server port
-			r.WriteString(53, "Aesir", 20)      // Server name (length 20)
-			r.WriteUint16(73, uint16(0))        // User count
-			r.WriteUint16(75, uint16(0))        // maintence
-			r.WriteUint16(77, uint16(0))        // server new?
+			r.WriteUint32(47, server1.Ip)       // Char-server ip_addr
+			r.WriteUint16(51, server1.Port)     // Char-server port
+			r.WriteString(53, server1.Name, 20) // Server name (length 20)
+			r.WriteUint16(73, server1.Users)    // User count
+			r.WriteUint16(75, server1.Type)     // maintence
+			r.WriteUint16(77, server1.New)      // server new?
 		}
 		c.Write(r.Buffer())
+
+		handleClient(&client)
+	}
+}
+
+// Client packet router
+func handleClient(client *Client) {
+	// Connection shorthand
+	c := client.conn
+
+	for {
+		packet := make([]byte, 1024)
+
+		length, _ := c.Read(packet)
+
+		// Connection-closed
+		if length == 0 {
+			log.Printf("Client (%d) disconnecting\n", client.account_id)
+			return
+		}
+
+		// First 2 bytes represent the packet_id
+		packet_id := int(packet[0])<<0 | int(packet[1])<<8
+
+		// Router
+		switch packet_id {
+		case PKT_HEARTBEAT:
+			log.Println("Heartbeet request")
+			c.Write([]byte("pong"))
+		default:
+			log.Printf("Abnormal packet received from authenticated client (%s): %#04x\n", c.RemoteAddr(), packet_id)
+		}
 	}
 }

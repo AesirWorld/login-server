@@ -44,24 +44,15 @@ type PACKET_ENTER struct {
 	clienttype uint8
 }
 
-func (p *PACKET_ENTER) Read(buf []byte) {
-	pkt := packet.Reader(buf)
-	p.version = pkt.ReadUint32(2)
-	p.username = pkt.ReadString(6, 24)
-	p.password = pkt.ReadString(30, 24)
-	p.clienttype = pkt.ReadUint8(54)
-}
-
 // Char-server connect request
 type PACKET_CHR_ENTER struct {
 	username string
 	password string
-}
-
-func (p *PACKET_CHR_ENTER) Read(buf []byte) {
-	pkt := packet.Reader(buf)
-	p.username = pkt.ReadString(2, 4)
-	p.password = pkt.ReadString(26, 24)
+	ip       uint32
+	port     uint16
+	name     string
+	_type    uint16 // 0=normal, 1=maintenance, 2=over 18, 3=paying, 4=P2P
+	_new     uint16 // should display as 'new'?
 }
 
 // Char-server req verify token
@@ -73,6 +64,41 @@ type PACKET_CHR_REQAUTHTOKEN struct {
 	request_id uint32
 }
 
+// Char-server req verify token
+type PACKET_CHR_REQACCDATA struct {
+	aid uint32
+}
+
+// Set acc offline
+type PACKET_CHR_REQSET_ACCOUNTOFFLINE struct {
+	account_id uint32
+}
+
+// Acc2Reg
+type PACKET_CHR_REQACC2REG struct {
+	account_id uint32
+	char_id    uint32
+}
+
+func (p *PACKET_ENTER) Read(buf []byte) {
+	pkt := packet.Reader(buf)
+	p.version = pkt.ReadUint32(2)
+	p.username = pkt.ReadString(6, 24)
+	p.password = pkt.ReadString(30, 24)
+	p.clienttype = pkt.ReadUint8(54)
+}
+
+func (p *PACKET_CHR_ENTER) Read(buf []byte) {
+	pkt := packet.Reader(buf)
+	p.username = pkt.ReadString(2, 4)
+	p.password = pkt.ReadString(26, 24)
+	p.ip = pkt.ReadUint32(54)
+	p.port = pkt.ReadUint16(58)
+	p.name = pkt.ReadString(60, 20)
+	p._type = pkt.ReadUint16(82)
+	p._new = pkt.ReadUint16(84)
+}
+
 func (p *PACKET_CHR_REQAUTHTOKEN) Read(buf []byte) {
 	pkt := packet.Reader(buf)
 	p.account_id = pkt.ReadUint32(2)
@@ -82,30 +108,14 @@ func (p *PACKET_CHR_REQAUTHTOKEN) Read(buf []byte) {
 	p.request_id = pkt.ReadUint32(19)
 }
 
-// Char-server req verify token
-type PACKET_CHR_REQACCDATA struct {
-	aid uint32
-}
-
 func (p *PACKET_CHR_REQACCDATA) Read(buf []byte) {
 	pkt := packet.Reader(buf)
 	p.aid = pkt.ReadUint32(2)
 }
 
-// Set acc offline
-type PACKET_CHR_REQSET_ACCOUNTOFFLINE struct {
-	account_id uint32
-}
-
 func (p *PACKET_CHR_REQSET_ACCOUNTOFFLINE) Read(buf []byte) {
 	pkt := packet.Reader(buf)
 	p.account_id = pkt.ReadUint32(2)
-}
-
-// Acc2Reg
-type PACKET_CHR_REQACC2REG struct {
-	account_id uint32
-	char_id    uint32
 }
 
 func (p *PACKET_CHR_REQACC2REG) Read(buf []byte) {
