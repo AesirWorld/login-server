@@ -20,12 +20,17 @@ type AuthDB struct {
 var auth_db = make(map[int]*AuthDB)
 
 func main() {
+	log.Println("Starting global-server...")
+
 	ln, err := net.Listen("tcp", ":6900")
 
 	if err != nil {
+		log.Println("Failed to listen...")
 		log.Println(err)
 		os.Exit(1)
 	}
+
+	log.Println("Global-server listening on port", 6900)
 
 	// Connect to account database
 	account.Connect()
@@ -65,7 +70,6 @@ func initConnection(c net.Conn) {
 		}
 
 		// First 2 bytes represent the packet_id
-		log.Println(packet)
 		packet_id := int(packet[0])<<0 | int(packet[1])<<8
 
 		log.Printf("Received packed_id: %d - %#04x\n", packet_id, packet_id)
@@ -83,7 +87,8 @@ func initConnection(c net.Conn) {
 			clientEnter(c, packet)
 			break
 		// Pass connection to charServer handler if sucessful
-		case PKT_CHR_ENTER: charServerEnter(c, packet)
+		case PKT_CHR_ENTER:
+			charServerEnter(c, packet)
 			return
 		default:
 			log.Printf("Abnormal end of connection (ip: %s): Unknown packet 0x%x\n", c.RemoteAddr(), packet_id)

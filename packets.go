@@ -44,7 +44,7 @@ type PACKET_ENTER struct {
 
 func (p *PACKET_ENTER) Read(buf []byte) {
 	pkt := packet.Reader(buf)
-	p.username = pkt.ReadString(6, 4)
+	p.username = pkt.ReadString(6, 24)
 	p.password = pkt.ReadString(30, 24)
 }
 
@@ -65,8 +65,8 @@ type PACKET_CHR_REQAUTHTOKEN struct {
 	account_id uint32
 	login_id1  uint32
 	login_id2  uint32
-    sex        uint8
-    request_id uint32
+	sex        uint8
+	request_id uint32
 }
 
 func (p *PACKET_CHR_REQAUTHTOKEN) Read(buf []byte) {
@@ -74,6 +74,38 @@ func (p *PACKET_CHR_REQAUTHTOKEN) Read(buf []byte) {
 	p.account_id = pkt.ReadUint32(2)
 	p.login_id1 = pkt.ReadUint32(6)
 	p.login_id2 = pkt.ReadUint32(10)
-    p.sex       = pkt.ReadUint8(14)
-    p.request_id = pkt.ReadUint32(19)
+	p.sex = pkt.ReadUint8(14)
+	p.request_id = pkt.ReadUint32(19)
+}
+
+// Char-server req verify token
+type PACKET_CHR_REQACCDATA struct {
+	aid uint32
+}
+
+func (p *PACKET_CHR_REQACCDATA) Read(buf []byte) {
+	pkt := packet.Reader(buf)
+	p.aid = pkt.ReadUint32(2)
+}
+
+// Set acc offline
+type PACKET_CHR_REQSET_ACCOUNTOFFLINE struct {
+	account_id uint32
+}
+
+func (p *PACKET_CHR_REQSET_ACCOUNTOFFLINE) Read(buf []byte) {
+	pkt := packet.Reader(buf)
+	p.account_id = pkt.ReadUint32(2)
+}
+
+// Acc2Reg
+type PACKET_CHR_REQACC2REG struct {
+	account_id uint32
+	char_id    uint32
+}
+
+func (p *PACKET_CHR_REQACC2REG) Read(buf []byte) {
+	pkt := packet.Reader(buf)
+	p.account_id = pkt.ReadUint32(2)
+	p.char_id = pkt.ReadUint32(6)
 }

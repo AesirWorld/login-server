@@ -45,8 +45,10 @@ func (p *Packet) ReadString(offset int16, length int16) string {
 }
 
 // Instanciates a new buffer and its writer funcs
-func Writer(buffer []byte) *Packet {
-	return &Packet{buffer}
+func Writer(length int) *Packet {
+	return &Packet{
+		buffer: make([]byte, length),
+	}
 }
 
 func (p *Packet) WriteUint8(offset int16, payload uint8) {
@@ -75,4 +77,8 @@ func (p *Packet) WriteInt32(offset int16, payload int32) {
 
 func (p *Packet) WriteString(offset int16, payload string, length int16) {
 	copy(p.buffer[offset:offset+length], payload)
+}
+
+func (p *Packet) Buffer() []byte {
+	return p.buffer
 }
