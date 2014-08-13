@@ -28,12 +28,13 @@ func (c *CharDB) Register(key int) {
 	return
 }
 
-// Get from auth_Db
-func Get(key int) *CharDB {
-	return hashtable[key]
+// Retrive from char_db
+func Get(key int) (entry *CharDB, ok bool) {
+	entry, ok = hashtable[key]
+	return
 }
 
-// Delete from auth_Db
+// Delete from char_db
 func Delete(key int) {
 	mutex.Lock()
 	delete(hashtable, key)

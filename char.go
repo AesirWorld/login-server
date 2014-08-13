@@ -46,6 +46,7 @@ func charServerEnter(c net.Conn, packet []byte) {
 		// I dont even know whats happening anymore
 		// We should be receiving the IP:PORT in network byte order (Big Endian)
 		// And send it in LittleEndian, since our client uses it.
+		// For some odd reason it sends us the IP in big endian and the PORT in little endian...
 		buf := make([]byte, 6)
 		binary.BigEndian.PutUint32(buf[0:], data.ip)
 		binary.BigEndian.PutUint16(buf[4:], data.port)
@@ -127,7 +128,12 @@ func charServerReqAuth(c net.Conn, packet []byte) {
 
 	log.Printf("Char-server req auth (%d) (%d/%d)\n", account_id, login_id1, login_id2)
 
-	auth := auth_db.Get(int(account_id))
+	auth, ok := auth_db.Get(int(account_id))
+
+	if ok == false {
+		log.Println("Invalid auth")
+		return
+	}
 
 	if auth.Login_id1 == login_id1 && auth.Login_id2 == login_id2 {
 		// Write pkt
@@ -214,51 +220,3 @@ func charServerAcc2Reg(c net.Conn, packet []byte) {
 
 	c.Write(r.Buffer())
 }
-
-/*
-   case 0x2714:
-       next = logchrif_parse_ackusercount(fd, cid)
-       break
-   case 0x2715:
-       next = logchrif_parse_updmail(fd, cid, ip)
-       break
-       case 0x2722:
-           next = logchrif_parse_reqchangemail(fd, cid, ip)
-           break
-       case 0x2724:
-           next = logchrif_parse_requpdaccstate(fd, cid, ip)
-           break
-       case 0x2725:
-           next = logchrif_parse_reqbanacc(fd, cid, ip)
-           break
-       case 0x2727:
-           next = logchrif_parse_reqchgsex(fd, cid, ip)
-           break
-       case 0x2728:
-           next = logchrif_parse_updreg2(fd, cid, ip)
-           break
-       case 0x272a:
-           next = logchrif_parse_requnbanacc(fd, cid, ip)
-           break
-       case 0x272b:
-           next = logchrif_parse_setacconline(fd, cid)
-           break
-   case 0x2736:
-       next = logchrif_parse_updcharip(fd, cid)
-       break
-   case 0x2737:
-       next = logchrif_parse_setalloffline(fd, cid)
-       break
-   case 0x2738:
-       next = logchrif_parse_updpincode(fd)
-       break
-   case 0x2739:
-       next = logchrif_parse_pincode_authfail(fd)
-       break
-   case 0x2740:
-       next = logchrif_parse_bankvault(fd, cid, ip)
-       break
-   case 0x2742:
-       next = logchrif_parse_reqvipdata(fd)
-       break //Vip sys`
-*/

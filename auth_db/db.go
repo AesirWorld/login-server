@@ -29,8 +29,9 @@ func (a *AuthDB) Register(key int) {
 }
 
 // Get from auth_Db
-func Get(key int) *AuthDB {
-	return hashtable[key]
+func Get(key int) (entry *AuthDB, ok bool) {
+	entry, ok = hashtable[key]
+	return
 }
 
 // Delete from auth_Db

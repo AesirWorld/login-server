@@ -76,7 +76,12 @@ func clientEnter(c net.Conn, packet []byte) {
 		auth.Register(account_id)
 
 		// Retrive server list
-		server1 := char_db.Get(1)
+		server1, ok := char_db.Get(1)
+
+		if ok == false {
+			log.Println("No-server server connected, yet.")
+			return
+		}
 
 		// Server num
 		server_num := 1
