@@ -17,27 +17,32 @@ type CharDB struct {
 	New   uint16 // should display as 'new'?
 }
 
-// Map
-var hashtable = make(map[int]*CharDB)
+// Map with all registerd char-servers
+var table = make(map[int]*CharDB)
 
 // Register structure to auth_db map
 func (c *CharDB) Register(key int) {
 	mutex.Lock()
-	hashtable[key] = c
+	table[key] = c
 	mutex.Unlock()
 	return
 }
 
 // Retrive from char_db
 func Get(key int) (entry *CharDB, ok bool) {
-	entry, ok = hashtable[key]
+	entry, ok = table[key]
 	return
+}
+
+// Return an list with all char-servers
+func List() map[int]*CharDB {
+	return table
 }
 
 // Delete from char_db
 func Delete(key int) {
 	mutex.Lock()
-	delete(hashtable, key)
+	delete(table, key)
 	mutex.Unlock()
 	return
 }

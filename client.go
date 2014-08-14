@@ -75,19 +75,19 @@ func clientEnter(c net.Conn, packet []byte) {
 		// Register to auth_db
 		auth.Register(account_id)
 
-		// Retrive server list
-		server1, ok := char_db.Get(1)
+		// Remove frm auth_db
+		defer func() {
+			auth_db.Delete(account_id)
+		}()
 
-		if ok == false {
-			log.Println("No-server server connected, yet.")
-			return
-		}
+		// Retrive server list
+		char_servers := char_db.List()
 
 		// Server num
-		server_num := 1
+		server_num := len(char_servers)
 
 		// Write response
-		packet_len := 47 + 32*server_num // Packet_size + Server_list_packet_size * servers_qunt
+		packet_len := 47 + 32 * server_num // Packet_size + Server_list_packet_size * servers_qunt
 		r := pkt.Writer(packet_len)
 		r.WriteUint16(0, 0x69)               // Packet id
 		r.WriteUint16(2, uint16(packet_len)) // Server list array length
@@ -99,13 +99,18 @@ func clientEnter(c net.Conn, packet []byte) {
 		r.WriteUint8(46, uint8(sex_num))     // Account sex
 
 		if server_num > 0 {
-			r.WriteUint32(47, server1.Ip)       // Char-server ip_addr
-			r.WriteUint16(51, server1.Port)     // Char-server port
-			r.WriteString(53, server1.Name, 20) // Server name (length 20)
-			r.WriteUint16(73, server1.Users)    // User count
-			r.WriteUint16(75, server1.Type)     // maintence
-			r.WriteUint16(77, server1.New)      // server new?
+			var off int16 // additional offset
+			for _, server := range char_servers {
+				r.WriteUint32(off + 47, server.Ip)       // Char-server ip_addr
+				r.WriteUint16(off + 51, server.Port)     // Char-server port
+				r.WriteString(off + 53, server.Name, 20) // Server name (length 20)
+				r.WriteUint16(off + 73, server.Users)    // User count
+				r.WriteUint16(off + 75, server.Type)     // maintence
+				r.WriteUint16(off + 77, server.New)      // server new?
+				off += 32 // size of each server_list packet container
+			}
 		}
+
 		c.Write(r.Buffer())
 
 		handleClient(&client)

@@ -40,6 +40,14 @@ func charServerEnter(c net.Conn, packet []byte) {
 
 		c.Write(r.Buffer())
 	} else {
+		// Check if this char-server is already connected
+		_, exists := char_db.Get(account_id)
+
+		if exists == true {
+			log.Printf("Char-server (%d) already connected... Rejecting...\n", account_id)
+			return
+		}
+
 		log.Printf("Char-server connection request accepted (%s) (%d)\n", c.RemoteAddr(), account_id)
 
 		// Convert from network byte order to BigEndian, wtf :( ?
@@ -63,7 +71,12 @@ func charServerEnter(c net.Conn, packet []byte) {
 			New:   data._new,
 		}
 
-		char.Register(1)
+		char.Register(account_id)
+
+		// Deregister
+		defer func() {
+			char_db.Delete(account_id)
+		}()
 
 		r := pkt.Writer(3)       // pkt length
 		r.WriteUint16(0, 0x2711) // Packet id
