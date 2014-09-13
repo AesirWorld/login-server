@@ -27,6 +27,7 @@ func charServerEnter(c net.Conn, packet []byte) {
 		// User not found
 	case err != nil:
 		// Handler error
+		log.Panicf(err.Error())
 	default:
 		// User found
 	}
@@ -90,9 +91,9 @@ func charServerEnter(c net.Conn, packet []byte) {
 // Char server handler
 // Packet router
 func handlerCharServer(c net.Conn, id int) {
-	for {
-		packet := make([]byte, 1024)
+	packet := make([]byte, 1024)
 
+	for {
 		length, _ := c.Read(packet)
 
 		// Connection-closed

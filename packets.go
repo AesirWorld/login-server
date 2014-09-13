@@ -44,6 +44,14 @@ type PACKET_ENTER struct {
 	clienttype uint8
 }
 
+// Client request for authentication with server, using facebook
+type PACKET_ENTER_FB struct {
+	version    uint32
+	userid     string // users facebook user_id
+	token      string // fb access_token
+	clienttype uint8
+}
+
 // Char-server connect request
 type PACKET_CHR_ENTER struct {
 	username string
@@ -86,6 +94,14 @@ func (p *PACKET_ENTER) Read(buf []byte) {
 	p.username = pkt.ReadString(6, 24)
 	p.password = pkt.ReadString(30, 24)
 	p.clienttype = pkt.ReadUint8(54)
+}
+
+func (p *PACKET_ENTER_FB) Read(buf []byte) {
+	pkt := packet.Reader(buf)
+	p.version = pkt.ReadUint32(2)
+	p.userid = pkt.ReadString(6, 20)
+	p.token = pkt.ReadString(26, 255) // size is not 255, but just to be safe, fb can change size of the token
+	p.clienttype = pkt.ReadUint8(281)
 }
 
 func (p *PACKET_CHR_ENTER) Read(buf []byte) {
