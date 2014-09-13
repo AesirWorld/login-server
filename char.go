@@ -5,9 +5,9 @@ import "log"
 import "net"
 import "encoding/binary"
 import "database/sql"
-import "github.com/AesirWorld/global-server/auth_db"
-import "github.com/AesirWorld/global-server/char_db"
-import pkt "github.com/AesirWorld/global-server/packet"
+import "github.com/AesirWorld/login-server/auth_db"
+import "github.com/AesirWorld/login-server/char_db"
+import pkt "github.com/AesirWorld/login-server/packet"
 
 // Authenticate char-server connection request
 // After authenticating this char-server will have full access to all other routes!

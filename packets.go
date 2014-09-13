@@ -3,7 +3,7 @@
 // This binary parser is needed since we need to communicate with some legacy services.
 package main
 
-import "github.com/AesirWorld/global-server/packet"
+import "github.com/AesirWorld/login-server/packet"
 
 // Aliases for each packet_id
 const (

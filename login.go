@@ -4,12 +4,10 @@ package main
 import "log"
 import "net"
 import "math/rand"
-import "time"
 import "database/sql"
-import "github.com/AesirWorld/global-server/auth_db"
-import "github.com/AesirWorld/global-server/char_db"
-import pkt "github.com/AesirWorld/global-server/packet"
-import fb "github.com/huandu/facebook"
+import "github.com/AesirWorld/login-server/auth_db"
+import "github.com/AesirWorld/login-server/char_db"
+import pkt "github.com/AesirWorld/login-server/packet"
 
 // Client session
 type Client struct {
